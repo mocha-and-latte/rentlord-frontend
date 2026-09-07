@@ -94,7 +94,7 @@ export function ResourceList({ kind }: { kind: Kind }) {
         title={c.title}
         subtitle={c.subtitle}
         action={
-          <Link className="primary" to={`/${kind}/new`}>
+          <Link className="primary" style={{ gap: 0 }} to={`/${kind}/new`}>
             <Plus size={18} />
             เพิ่มรายการ
           </Link>

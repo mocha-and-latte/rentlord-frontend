@@ -1,11 +1,5 @@
 import { Session } from '@supabase/supabase-js'
-import {
-  createContext,
-  ReactNode,
-  use,
-  useEffect,
-  useState,
-} from 'react'
+import { createContext, ReactNode, use, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 
 type AuthState = {

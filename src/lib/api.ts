@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
+export const apiUrl = (path: string) => `${base}${path}`
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -16,7 +17,7 @@ export async function api<T = any>(
   const {
     data: { session },
   } = await supabase.auth.getSession()
-  const response = await fetch(`${base}${path}`, {
+  const response = await fetch(apiUrl(path), {
     ...init,
     headers: {
       'Content-Type': 'application/json',

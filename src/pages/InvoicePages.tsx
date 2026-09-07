@@ -12,6 +12,7 @@ import {
   Status,
   SubmitButton,
 } from '../components/UI'
+
 export function InvoicesPage() {
   const [data, setData] = useState<any>()
   const [error, setError] = useState<unknown>()
@@ -70,6 +71,7 @@ export function InvoicesPage() {
     </>
   )
 }
+
 export function NewInvoicePage() {
   const nav = useNavigate()
   const [agreements, setAgreements] = useState<any[]>([])
@@ -187,6 +189,7 @@ export function NewInvoicePage() {
     </>
   )
 }
+
 export function InvoicePage() {
   const { id } = useParams()
   const [data, setData] = useState<any>()

@@ -27,11 +27,64 @@ import {
   SubmitButton,
 } from '../components/UI'
 
+type Agreement = {
+  id?: string
+  unit?: { title?: string | null } | null
+  tenant?: { fullName?: string | null } | null
+  state?: string | null
+  startDate?: string | null
+  endDate?: string | null
+  rentAmount?: unknown
+  securityDeposit?: unknown
+  rentInterval?: string | null
+  billingAnchor?: string | null
+  acceptedAt?: string | null
+  acceptanceIp?: string | null
+  publicUrl?: string | null
+  renderedHtml?: string | null
+}
+
+type Reference = {
+  id?: string
+  title?: string | null
+  fullName?: string | null
+  name?: string | null
+}
+
+type References = {
+  units: Reference[]
+  tenants: Reference[]
+  templates: Reference[]
+}
+
+const asArray = <T,>(value: unknown): T[] =>
+  Array.isArray(value) ? value.filter((item) => item != null) : []
+
+const responseItems = <T,>(value: unknown): T[] => {
+  if (!value || typeof value !== 'object') return []
+  return asArray<T>((value as { items?: unknown }).items)
+}
+
+const display = (value: unknown, fallback = '—') =>
+  typeof value === 'string' || typeof value === 'number'
+    ? String(value) || fallback
+    : fallback
+
+const formatDate = (value: unknown) => {
+  if (typeof value !== 'string' || Number.isNaN(Date.parse(value))) return '—'
+  return date(value)
+}
+
+const formatMoney = (value: unknown) =>
+  value == null || value === '' ? '—' : money(value)
+
 export function AgreementsPage() {
-  const [data, setData] = useState<any>()
+  const [items, setItems] = useState<Agreement[] | null>(null)
   const [error, setError] = useState<unknown>()
   useEffect(() => {
-    api('/agreements?pageSize=100').then(setData).catch(setError)
+    api('/agreements?pageSize=100')
+      .then((response) => setItems(responseItems<Agreement>(response)))
+      .catch(setError)
   }, [])
   return (
     <>
@@ -47,27 +100,27 @@ export function AgreementsPage() {
       />
       {error ? (
         <ErrorBox error={error} />
-      ) : !data ? (
+      ) : !items ? (
         <Loading />
-      ) : !data.items.length ? (
+      ) : !items.length ? (
         <Empty title="ยังไม่มีสัญญา" />
       ) : (
         <div className="list-card">
-          {data.items.map((item: any) => (
+          {items.map((item, index) => (
             <Link
               className="list-row"
-              to={`/agreements/${item.id}`}
-              key={item.id}
+              to={item.id ? `/agreements/${item.id}` : '/agreements'}
+              key={item.id ?? index}
             >
               <div className="avatar paper">§</div>
               <div className="grow">
-                <strong>{item.unit.title}</strong>
+                <strong>{display(item.unit?.title, 'ไม่ระบุยูนิต')}</strong>
                 <span>
-                  {item.tenant.fullName} · {date(item.startDate)} ·{' '}
-                  {money(item.rentAmount)}
+                  {display(item.tenant?.fullName, 'ไม่ระบุผู้เช่า')} ·{' '}
+                  {formatDate(item.startDate)} · {formatMoney(item.rentAmount)}
                 </span>
               </div>
-              <Status value={item.state} />
+              <Status value={display(item.state, 'unknown')} />
               <span className="chevron">›</span>
             </Link>
           ))}
@@ -79,7 +132,7 @@ export function AgreementsPage() {
 
 export function NewAgreementPage() {
   const navigate = useNavigate()
-  const [references, setReferences] = useState<any>()
+  const [references, setReferences] = useState<References | null>(null)
   const [definitions, setDefinitions] = useState<any[]>([])
   const [customValues, setCustomValues] = useState<Record<string, unknown>>({})
   const [form, setForm] = useState<any>({
@@ -95,17 +148,20 @@ export function NewAgreementPage() {
       api<any>('/custom-fields?scope=agreement&pageSize=100'),
     ])
       .then(([units, tenants, templates, fields]) => {
+        const unitItems = responseItems<Reference>(units)
+        const tenantItems = responseItems<Reference>(tenants)
+        const templateItems = responseItems<Reference>(templates)
         setReferences({
-          units: units.items,
-          tenants: tenants.items,
-          templates: templates.items,
+          units: unitItems,
+          tenants: tenantItems,
+          templates: templateItems,
         })
-        setDefinitions(fields.items)
+        setDefinitions(responseItems(fields))
         setForm((current: any) => ({
           ...current,
-          unitId: units.items[0]?.id,
-          tenantId: tenants.items[0]?.id,
-          templateId: templates.items[0]?.id,
+          unitId: unitItems[0]?.id,
+          tenantId: tenantItems[0]?.id,
+          templateId: templateItems[0]?.id,
         }))
       })
       .catch(setLoadError)
@@ -117,6 +173,7 @@ export function NewAgreementPage() {
           method: 'POST',
           body: JSON.stringify(form),
         })
+        if (!agreement?.id) throw new Error('ระบบไม่ได้ส่งรหัสสัญญากลับมา')
         if (definitions.length)
           await api(`/custom-field-values/agreement/${agreement.id}`, {
             method: 'PATCH',
@@ -151,9 +208,9 @@ export function NewAgreementPage() {
                 setForm({ ...form, unitId: event.target.value })
               }
             >
-              {references.units.map((item: any) => (
-                <option key={item.id} value={item.id}>
-                  {item.title}
+              {references.units.map((item, index) => (
+                <option key={item.id ?? index} value={item.id ?? ''}>
+                  {display(item.title, 'ไม่ระบุยูนิต')}
                 </option>
               ))}
             </select>
@@ -167,9 +224,9 @@ export function NewAgreementPage() {
                 setForm({ ...form, tenantId: event.target.value })
               }
             >
-              {references.tenants.map((item: any) => (
-                <option key={item.id} value={item.id}>
-                  {item.fullName}
+              {references.tenants.map((item, index) => (
+                <option key={item.id ?? index} value={item.id ?? ''}>
+                  {display(item.fullName, 'ไม่ระบุผู้เช่า')}
                 </option>
               ))}
             </select>
@@ -183,9 +240,9 @@ export function NewAgreementPage() {
                 setForm({ ...form, templateId: event.target.value })
               }
             >
-              {references.templates.map((item: any) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
+              {references.templates.map((item, index) => (
+                <option key={item.id ?? index} value={item.id ?? ''}>
+                  {display(item.name, 'ไม่ระบุแม่แบบ')}
                 </option>
               ))}
             </select>
@@ -195,7 +252,7 @@ export function NewAgreementPage() {
             <input
               required
               type="date"
-              value={form.startDate}
+              value={form.startDate ?? ''}
               onChange={(event) =>
                 setForm({ ...form, startDate: event.target.value })
               }
@@ -214,7 +271,7 @@ export function NewAgreementPage() {
           <label>
             รอบวางบิล
             <select
-              value={form.billingAnchor}
+              value={form.billingAnchor ?? 'agreement_start'}
               onChange={(event) =>
                 setForm({ ...form, billingAnchor: event.target.value })
               }
@@ -270,33 +327,47 @@ export function NewAgreementPage() {
 export function AgreementPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [data, setData] = useState<any>()
+  const [data, setData] = useState<Agreement | null>(null)
   const [definitions, setDefinitions] = useState<any[]>([])
   const [customValues, setCustomValues] = useState<Record<string, unknown>>({})
   const [error, setError] = useState<unknown>()
   const [isDeleting, setIsDeleting] = useState(false)
-  const load = () =>
-    Promise.all([
-      api<any>(`/agreements/${id}`),
-      api<any[]>(`/custom-field-values/agreement/${id}`),
+  const load = () => {
+    if (!id) {
+      setError(new Error('ไม่พบรหัสสัญญา'))
+      return
+    }
+    return Promise.all([
+      api<Agreement>(`/agreements/${id}`),
+      api<unknown>(`/custom-field-values/agreement/${id}`),
     ])
       .then(([agreement, fields]) => {
+        if (!agreement || typeof agreement !== 'object')
+          throw new Error('ข้อมูลสัญญาที่ได้รับไม่สมบูรณ์')
+        const fieldItems = asArray<{ id?: string; value?: unknown }>(fields)
         setData(agreement)
-        setDefinitions(fields)
+        setDefinitions(fieldItems)
         setCustomValues(
-          Object.fromEntries(fields.map((item) => [item.id, item.value])),
+          Object.fromEntries(
+            fieldItems
+              .filter((item) => typeof item.id === 'string')
+              .map((item) => [item.id, item.value]),
+          ),
         )
       })
       .catch(setError)
+  }
   useEffect(() => {
     load()
   }, [id])
   async function persistCustomFields() {
-    if (data.state !== 'draft' || definitions.length === 0) return definitions
-    const fields = await api<any[]>(`/custom-field-values/agreement/${id}`, {
+    if (!id || data?.state !== 'draft' || definitions.length === 0)
+      return definitions
+    const response = await api<unknown>(`/custom-field-values/agreement/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ values: customValues }),
     })
+    const fields = asArray(response)
     setDefinitions(fields)
     return fields
   }
@@ -304,7 +375,12 @@ export function AgreementPage() {
     if (!confirm('เมื่อส่งแล้ว สัญญาจะไม่สามารถแก้ไขได้ ยืนยันหรือไม่?')) return
     try {
       await persistCustomFields()
-      setData(await api(`/agreements/${id}/send`, { method: 'POST' }))
+      const agreement = await api<Agreement>(`/agreements/${id}/send`, {
+        method: 'POST',
+      })
+      if (!agreement || typeof agreement !== 'object')
+        throw new Error('ข้อมูลสัญญาที่ได้รับไม่สมบูรณ์')
+      setData(agreement)
     } catch (sendError) {
       setError(sendError)
     }
@@ -313,6 +389,8 @@ export function AgreementPage() {
     try {
       await persistCustomFields()
       const result = await api<{ downloadUrl: string }>(`/agreements/${id}/pdf`)
+      if (!result?.downloadUrl)
+        throw new Error('ระบบไม่ได้ส่งลิงก์ดาวน์โหลด PDF กลับมา')
       window.open(result.downloadUrl, '_blank', 'noopener,noreferrer')
     } catch (pdfError) {
       setError(pdfError)
@@ -328,7 +406,7 @@ export function AgreementPage() {
   async function rotateUrl() {
     if (
       !confirm(
-        data.publicUrl
+        data?.publicUrl
           ? 'ลิงก์เดิมจะใช้ไม่ได้ทันที ยืนยันการสร้างลิงก์ใหม่?'
           : 'สร้างลิงก์สาธารณะใหม่?',
       )
@@ -339,7 +417,9 @@ export function AgreementPage() {
         `/agreements/${id}/public-url`,
         { method: 'POST' },
       )
-      setData({ ...data, publicUrl: result.publicUrl })
+      if (!result?.publicUrl)
+        throw new Error('ระบบไม่ได้ส่งลิงก์สาธารณะกลับมา')
+      setData((current) => ({ ...(current ?? {}), publicUrl: result.publicUrl }))
     } catch (rotateError) {
       setError(rotateError)
     }
@@ -351,7 +431,7 @@ export function AgreementPage() {
       return
     try {
       await api(`/agreements/${id}/public-url`, { method: 'DELETE' })
-      setData({ ...data, publicUrl: null })
+      setData((current) => ({ ...(current ?? {}), publicUrl: null }))
     } catch (revokeError) {
       setError(revokeError)
     }
@@ -373,8 +453,8 @@ export function AgreementPage() {
   return (
     <>
       <PageHeader
-        title={`สัญญา · ${data.unit?.title}`}
-        subtitle={`${data.tenant.fullName} · ${date(data.startDate)}${data.endDate ? ` – ${date(data.endDate)}` : ''}`}
+        title={`สัญญา · ${display(data.unit?.title, 'ไม่ระบุยูนิต')}`}
+        subtitle={`${display(data.tenant?.fullName, 'ไม่ระบุผู้เช่า')} · ${formatDate(data.startDate)}${data.endDate ? ` – ${formatDate(data.endDate)}` : ''}`}
         action={
           <div className="button-row">
             {data.state === 'draft' && (
@@ -405,23 +485,23 @@ export function AgreementPage() {
         <section className="detail-card">
           <div className="detail-title">
             <h3>รายละเอียดสัญญา</h3>
-            <Status value={data.state} />
+            <Status value={display(data.state, 'unknown')} />
           </div>
           <dl>
             <dt>ค่าเช่า</dt>
-            <dd>{money(data.rentAmount)}</dd>
+            <dd>{formatMoney(data.rentAmount)}</dd>
             <dt>เงินประกัน</dt>
-            <dd>{money(data.securityDeposit)}</dd>
+            <dd>{formatMoney(data.securityDeposit)}</dd>
             <dt>รอบค่าเช่า</dt>
-            <dd>{data.rentInterval}</dd>
+            <dd>{display(data.rentInterval)}</dd>
             <dt>หลักวางบิล</dt>
-            <dd>{data.billingAnchor}</dd>
+            <dd>{display(data.billingAnchor)}</dd>
             {data.acceptedAt && (
               <>
                 <dt>ยอมรับเมื่อ</dt>
-                <dd>{date(data.acceptedAt)}</dd>
+                <dd>{formatDate(data.acceptedAt)}</dd>
                 <dt>IP</dt>
-                <dd>{data.acceptanceIp}</dd>
+                <dd>{display(data.acceptanceIp)}</dd>
               </>
             )}
           </dl>
@@ -446,7 +526,9 @@ export function AgreementPage() {
               <div className="button-row">
                 <button
                   className="ghost"
-                  onClick={() => navigator.clipboard.writeText(data.publicUrl)}
+                  onClick={() =>
+                    navigator.clipboard?.writeText(data.publicUrl ?? '')
+                  }
                 >
                   <Link2 size={16} />
                   คัดลอก
@@ -480,7 +562,7 @@ export function AgreementPage() {
 
 export function PublicAgreementPage() {
   const { token } = useParams()
-  const [data, setData] = useState<any>()
+  const [data, setData] = useState<Agreement | null>(null)
   const [error, setError] = useState<unknown>()
   const [isDecisionPending, startDecision] = useTransition()
   const [optimisticState, setOptimisticState] = useOptimistic(
@@ -488,9 +570,23 @@ export function PublicAgreementPage() {
     (_currentState, nextState: string) => nextState,
   )
   useEffect(() => {
-    api(`/public/agreements/${token}`).then(setData).catch(setError)
+    if (!token) {
+      setError(new Error('ไม่พบลิงก์สัญญา'))
+      return
+    }
+    api<Agreement>(`/public/agreements/${token}`)
+      .then((agreement) => {
+        if (!agreement || typeof agreement !== 'object')
+          throw new Error('ข้อมูลสัญญาที่ได้รับไม่สมบูรณ์')
+        setData(agreement)
+      })
+      .catch(setError)
   }, [token])
   function decide(action: 'accept' | 'reject') {
+    if (!token) {
+      setError(new Error('ไม่พบลิงก์สัญญา'))
+      return
+    }
     if (
       !confirm(
         action === 'accept' ? 'ยืนยันการยอมรับสัญญา?' : 'ยืนยันการปฏิเสธสัญญา?',
@@ -502,7 +598,7 @@ export function PublicAgreementPage() {
       setOptimisticState(nextState)
       try {
         await api(`/public/agreements/${token}/${action}`, { method: 'POST' })
-        setData((current: any) => ({ ...current, state: nextState }))
+        setData((current) => ({ ...(current ?? {}), state: nextState }))
       } catch (decisionError) {
         setError(decisionError)
       }
@@ -525,11 +621,13 @@ export function PublicAgreementPage() {
             <div className="public-heading">
               <p className="eyebrow">RENTAL AGREEMENT</p>
               <h1>สัญญาเช่า</h1>
-              <Status value={optimisticState ?? data.state} />
+              <Status
+                value={display(optimisticState ?? data.state, 'unknown')}
+              />
             </div>
             <article
               className="agreement-paper"
-              dangerouslySetInnerHTML={{ __html: data.renderedHtml }}
+              dangerouslySetInnerHTML={{ __html: data.renderedHtml ?? '' }}
             />
             {data.state === 'sent' && (
               <div className="decision-bar">

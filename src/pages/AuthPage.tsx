@@ -4,6 +4,8 @@ import { Building2, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { SubmitButton } from '../components/UI'
+import { apiUrl } from '../lib/api'
+
 export function LoginPage({ mode }: { mode: 'login' | 'register' }) {
   const { session } = useAuth()
   const [email, setEmail] = useState('')
@@ -111,10 +113,7 @@ export function LoginPage({ mode }: { mode: 'login' | 'register' }) {
               required
             />
           </label>
-          <SubmitButton
-            className="primary wide"
-            pendingLabel="กำลังดำเนินการ…"
-          >
+          <SubmitButton className="primary wide auth-button" pendingLabel="กำลังดำเนินการ…">
             {mode === 'login' ? 'เข้าสู่ระบบ' : 'สร้างบัญชี'}
           </SubmitButton>
           <div className="or">
@@ -123,8 +122,7 @@ export function LoginPage({ mode }: { mode: 'login' | 'register' }) {
           <button
             type="button"
             className="line-button"
-            disabled
-            title="ตั้งค่า LINE Login ใน backend ก่อน"
+            onClick={() => window.location.assign(apiUrl('/auth/line'))}
           >
             LINE <b>เข้าสู่ระบบด้วย LINE</b>
           </button>

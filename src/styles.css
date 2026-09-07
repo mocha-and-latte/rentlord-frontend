@@ -35,7 +35,8 @@
 }
 @font-face {
   font-family: 'Google Sans';
-  src: url('./assets/fonts/GoogleSans-SemiBoldItalic-Web.ttf') format('truetype');
+  src: url('./assets/fonts/GoogleSans-SemiBoldItalic-Web.ttf')
+    format('truetype');
   font-weight: 600;
   font-style: italic;
   font-display: swap;
@@ -890,6 +891,9 @@ textarea {
 .auth-form label {
   margin-top: 19px;
 }
+.auth-button {
+  margin-top: 19px;
+}
 .or {
   display: flex;
   align-items: center;
@@ -913,8 +917,9 @@ textarea {
   background: white;
   color: #06a346;
 }
-.line-button:disabled {
-  opacity: 0.65;
+.line-button:hover {
+  border-color: #06a346;
+  background: #f2fff7;
 }
 .switch {
   text-align: center;

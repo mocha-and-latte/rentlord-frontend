@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { date } from '../lib/locale'
 import { Empty, ErrorBox, Loading, PageHeader, Status } from '../components/UI'
+
 export function NotificationsPage() {
   const [data, setData] = useState<any>()
   const [error, setError] = useState<unknown>()
@@ -52,6 +53,7 @@ export function NotificationsPage() {
     </>
   )
 }
+
 export function AdminPage() {
   const [data, setData] = useState<any>()
   const [error, setError] = useState<unknown>()
