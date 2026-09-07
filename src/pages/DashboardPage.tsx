@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArrowRight,
   Building2,
@@ -10,23 +10,26 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { money } from '../lib/locale'
 import { ErrorBox, Loading, PageHeader } from '../components/UI'
 
 export function DashboardPage() {
-  const [data, setData] = useState<any>()
-  const [me, setMe] = useState<any>()
-  const [error, setError] = useState<unknown>()
-  useEffect(() => {
-    Promise.all([api('/dashboard'), api('/me')])
-      .then(([d, m]) => {
-        setData(d)
-        setMe(m)
-      })
-      .catch(setError)
-  }, [])
+  const { session } = useAuth()
+  const accountId = session?.user.id ?? 'anonymous'
+  const dashboard = useQuery({
+    queryKey: ['dashboard', accountId],
+    queryFn: ({ signal }) => api<any>('/dashboard', { signal }),
+  })
+  const profile = useQuery({
+    queryKey: ['me', accountId],
+    queryFn: ({ signal }) => api<any>('/me', { signal }),
+  })
+  const data = dashboard.data
+  const me = profile.data
+  const error = dashboard.error || profile.error
   if (error) return <ErrorBox error={error} />
-  if (!data) return <Loading />
+  if (dashboard.isPending || profile.isPending) return <Loading />
   return (
     <>
       <PageHeader

@@ -1,8 +1,12 @@
 // @ts-nocheck
 import { useActionState, useEffect, useState } from 'react'
+import { useDbClient, useLiveQuery } from '@tanstack/react-db'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CheckCircle2, Plus, QrCode, XCircle } from 'lucide-react'
 import { api } from '../lib/api'
+import { useAuth } from '../lib/auth'
+import { invoiceCollectionOptions, invoiceQueryKey } from '../lib/invoices'
 import { date, money } from '../lib/locale'
 import {
   Empty,
@@ -14,14 +18,20 @@ import {
 } from '../components/UI'
 
 export function InvoicesPage() {
-  const [data, setData] = useState<any>()
-  const [error, setError] = useState<unknown>()
   const [status, setStatus] = useState('')
-  useEffect(() => {
-    api(`/invoices?pageSize=100${status ? `&status=${status}` : ''}`)
-      .then(setData)
-      .catch(setError)
-  }, [status])
+  const { session } = useAuth()
+  const accountId = session?.user.id ?? 'anonymous'
+  const invoicesCollection = useDbClient().collection(
+    invoiceCollectionOptions(accountId),
+  )
+  const invoices = useLiveQuery({
+    queryKey: [invoicesCollection.id, 'status', status],
+    query: (q) =>
+      q
+        .from({ invoice: invoicesCollection })
+        .fn.where(({ invoice }) => !status || invoice.status === status),
+  })
+  const error = invoicesCollection.utils.lastError
   return (
     <>
       <PageHeader
@@ -45,13 +55,13 @@ export function InvoicesPage() {
       </div>
       {error ? (
         <ErrorBox error={error} />
-      ) : !data ? (
+      ) : invoices.isLoading ? (
         <Loading />
-      ) : !data.items.length ? (
+      ) : !invoices.data.length ? (
         <Empty />
       ) : (
         <div className="list-card">
-          {data.items.map((x: any) => (
+          {invoices.data.map((x) => (
             <Link className="list-row" to={`/invoices/${x.id}`} key={x.id}>
               <div className="avatar invoice">฿</div>
               <div className="grow">
@@ -74,6 +84,9 @@ export function InvoicesPage() {
 
 export function NewInvoicePage() {
   const nav = useNavigate()
+  const queryClient = useQueryClient()
+  const { session } = useAuth()
+  const accountId = session?.user.id ?? 'anonymous'
   const [agreements, setAgreements] = useState<any[]>([])
   const [loadError, setLoadError] = useState<unknown>()
   const [form, setForm] = useState<any>({
@@ -106,6 +119,14 @@ export function NewInvoicePage() {
           method: 'POST',
           body: JSON.stringify(form),
         })
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: invoiceQueryKey(accountId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ['dashboard', accountId],
+          }),
+        ])
         nav(`/invoices/${x.id}`)
         return undefined
       } catch (e) {
@@ -192,6 +213,9 @@ export function NewInvoicePage() {
 
 export function InvoicePage() {
   const { id } = useParams()
+  const queryClient = useQueryClient()
+  const { session } = useAuth()
+  const accountId = session?.user.id ?? 'anonymous'
   const [data, setData] = useState<any>()
   const [error, setError] = useState<unknown>()
   const [qr, setQr] = useState('')
@@ -211,12 +235,12 @@ export function InvoicePage() {
     const method = prompt('วิธีชำระ: promptpay หรือ cash', 'promptpay')
     if (!method || !confirm(`ยืนยันรับชำระ ${money(data.totalAmount)}?`)) return
     try {
-      setData(
-        await api(`/invoices/${id}/mark-paid`, {
-          method: 'POST',
-          body: JSON.stringify({ method }),
-        }),
-      )
+      const updated = await api(`/invoices/${id}/mark-paid`, {
+        method: 'POST',
+        body: JSON.stringify({ method }),
+      })
+      setData(updated)
+      await invalidateInvoiceSummaries()
     } catch (e) {
       setError(e)
     }
@@ -225,9 +249,16 @@ export function InvoicePage() {
     if (!confirm('ยืนยันยกเลิกใบแจ้งหนี้?')) return
     try {
       setData(await api(`/invoices/${id}/cancel`, { method: 'POST' }))
+      await invalidateInvoiceSummaries()
     } catch (e) {
       setError(e)
     }
+  }
+  function invalidateInvoiceSummaries() {
+    return Promise.all([
+      queryClient.invalidateQueries({ queryKey: invoiceQueryKey(accountId) }),
+      queryClient.invalidateQueries({ queryKey: ['dashboard', accountId] }),
+    ])
   }
   if (!data) return error ? <ErrorBox error={error} /> : <Loading />
   return (
