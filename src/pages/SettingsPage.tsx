@@ -1,8 +1,19 @@
-import { ArrowRight, FileText, SlidersHorizontal } from 'lucide-react'
+import {
+  ArrowRight,
+  FileText,
+  MessageCircle,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/UI'
 
 const settings = [
+  {
+    to: '/line-accounts',
+    icon: MessageCircle,
+    title: 'บัญชี LINE',
+    description: 'เชื่อมและยืนยันบัญชี LINE สำหรับเจ้าของบ้านหรือผู้เช่า',
+  },
   {
     to: '/agreement-templates',
     icon: FileText,

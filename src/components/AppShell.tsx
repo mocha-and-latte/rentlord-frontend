@@ -45,7 +45,8 @@ export function AppShell() {
               className={
                 to === '/settings' &&
                 (pathname.startsWith('/custom-fields') ||
-                  pathname.startsWith('/agreement-templates'))
+                  pathname.startsWith('/agreement-templates') ||
+                  pathname.startsWith('/line-accounts'))
                   ? 'active'
                   : undefined
               }

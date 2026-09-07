@@ -740,7 +740,15 @@ textarea {
   margin: 10px;
 }
 .pin-card small {
+  display: block;
   color: var(--muted);
+}
+.pin-card h3 {
+  color: #194a38;
+  margin: 12px 0 6px;
+}
+.pin-card .primary {
+  margin-top: 16px;
 }
 .icon-button {
   border: 0;
