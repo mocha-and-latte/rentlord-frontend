@@ -3,7 +3,7 @@ import { useActionState, useEffect, useState } from 'react'
 import { useDbClient, useLiveQuery } from '@tanstack/react-db'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { CheckCircle2, Plus, QrCode, XCircle } from 'lucide-react'
+import { CheckCircle2, Plus, QrCode, Send, XCircle } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { invoiceCollectionOptions, invoiceQueryKey } from '../lib/invoices'
@@ -219,9 +219,16 @@ export function InvoicePage() {
   const [data, setData] = useState<any>()
   const [error, setError] = useState<unknown>()
   const [qr, setQr] = useState('')
-  const load = () => api(`/invoices/${id}`).then(setData).catch(setError)
+  const [sendingQr, setSendingQr] = useState(false)
+  const [qrSent, setQrSent] = useState(false)
+  const load = () => {
+    api(`/invoices/${id}`).then(setData).catch(setError)
+    return () => {}
+  }
   useEffect(load, [id])
   async function getQr() {
+    setQrSent(false)
+    setError(undefined)
     try {
       const x = await api<any>(`/invoices/${id}/generate-qr`, {
         method: 'POST',
@@ -243,6 +250,19 @@ export function InvoicePage() {
       await invalidateInvoiceSummaries()
     } catch (e) {
       setError(e)
+    }
+  }
+  async function sendQrToLine() {
+    setSendingQr(true)
+    setQrSent(false)
+    setError(undefined)
+    try {
+      await api(`/invoices/${id}/send-qr-to-line`, { method: 'POST' })
+      setQrSent(true)
+    } catch (e) {
+      setError(e)
+    } finally {
+      setSendingQr(false)
     }
   }
   async function cancel() {
@@ -313,6 +333,19 @@ export function InvoicePage() {
             </div>
           )}
           <div className="button-stack">
+            {qr && (
+              <button
+                className="primary"
+                onClick={sendQrToLine}
+                disabled={sendingQr}
+              >
+                <Send size={17} />
+                {sendingQr ? 'กำลังส่งเข้า LINE…' : 'ส่งรูปนี้เข้า LINE ที่ผูกไว้'}
+              </button>
+            )}
+            {qrSent && (
+              <div className="success-box">ส่ง QR เข้า LINE เรียบร้อยแล้ว</div>
+            )}
             {!['paid', 'cancelled'].includes(data.status) && (
               <>
                 <button className="ghost" onClick={getQr}>
