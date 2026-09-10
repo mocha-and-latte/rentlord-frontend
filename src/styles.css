@@ -929,6 +929,71 @@ textarea {
   border-color: #06a346;
   background: #f2fff7;
 }
+.line-share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #06c755;
+  color: white;
+  font-weight: 600;
+}
+.line-share-button:hover {
+  background: #05ad49;
+}
+.invite-result h2 {
+  margin: 0 0 4px;
+}
+.invite-success-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #087a3d;
+  background: #e4f7eb;
+}
+.invite-public-page {
+  min-height: 100vh;
+  padding: 28px 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #12382d, #1d5946);
+}
+.invite-public-card {
+  width: min(100%, 520px);
+  padding: 38px;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 22px 60px #071b1438;
+}
+.invite-public-card .brand {
+  margin-bottom: 42px;
+}
+.invite-public-card h1 {
+  font-size: 32px;
+  line-height: 1.25;
+  margin: 8px 0 14px;
+}
+.invite-lead {
+  color: #52615b;
+  line-height: 1.65;
+}
+.invite-line-button {
+  margin-top: 22px;
+  padding: 13px;
+}
+.invite-public-card.complete {
+  text-align: center;
+}
+.invite-public-card.complete .invite-success-icon {
+  margin: 0 auto 20px;
+}
+.invite-public-card.complete h1 {
+  margin-bottom: 12px;
+}
 .switch {
   text-align: center;
   color: var(--muted);
@@ -1070,6 +1135,9 @@ textarea {
   }
   .button-row {
     flex-direction: column;
+  }
+  .invite-public-card {
+    padding: 28px 22px;
   }
   .avatar {
     display: none;

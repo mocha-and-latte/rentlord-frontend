@@ -14,6 +14,11 @@ import { InvoicePage, InvoicesPage, NewInvoicePage } from './pages/InvoicePages'
 import { LineAccountsPage } from './pages/LineAccountsPage'
 import { AdminPage, NotificationsPage } from './pages/MiscPages'
 import { SettingsPage } from './pages/SettingsPage'
+import {
+  NewTenantInvitePage,
+  PublicTenantInvitePage,
+  TenantInviteCompletePage,
+} from './pages/TenantInvitePages'
 
 function Guard() {
   const { session, loading } = useAuth()
@@ -29,6 +34,8 @@ export default function App() {
         path="/public/agreement/:token"
         element={<PublicAgreementPage />}
       />
+      <Route path="/tenant-invite/:token" element={<PublicTenantInvitePage />} />
+      <Route path="/tenant-invite/complete" element={<TenantInviteCompletePage />} />
       <Route element={<Guard />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/units" element={<ResourceList kind="units" />} />
@@ -36,6 +43,7 @@ export default function App() {
         <Route path="/units/:id" element={<ResourceForm kind="units" />} />
         <Route path="/tenants" element={<ResourceList kind="tenants" />} />
         <Route path="/tenants/new" element={<ResourceForm kind="tenants" />} />
+        <Route path="/tenants/invite" element={<NewTenantInvitePage />} />
         <Route path="/tenants/:id" element={<ResourceForm kind="tenants" />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route

@@ -11,6 +11,8 @@ npm run dev
 
 LINE Login starts at the backend `/api/v1/auth/line` route. The backend exchanges the LINE authorization code and hands the browser a Supabase session; no LINE secret is exposed to Vite.
 
+Tenant invitations start at `/tenants/invite`. Each invite URL is valid once for three days and completes at `/tenant-invite/complete`, which must be included in the Supabase Auth redirect allowlist.
+
 ## Vercel
 
 Import this directory as a Vercel project using the Vite preset. Add all four `VITE_*` values from `.env.example`; set `VITE_API_URL` to the Azure API URL ending in `/api/v1`. `vercel.json` includes the SPA route fallback.

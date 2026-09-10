@@ -1,6 +1,6 @@
 import { ChangeEvent, useActionState, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ImagePlus, Plus, Search, Trash2, X } from 'lucide-react'
+import { ImagePlus, MessageCircle, Plus, Search, Trash2, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { money } from '../lib/locale'
 import { supabase } from '../lib/supabase'
@@ -94,10 +94,18 @@ export function ResourceList({ kind }: { kind: Kind }) {
         title={c.title}
         subtitle={c.subtitle}
         action={
-          <Link className="primary" style={{ gap: 0 }} to={`/${kind}/new`}>
-            <Plus size={18} />
-            เพิ่มรายการ
-          </Link>
+          <div className="button-row">
+            {kind === 'tenants' && (
+              <Link className="ghost" to="/tenants/invite">
+                <MessageCircle size={18} />
+                เชิญผ่าน LINE
+              </Link>
+            )}
+            <Link className="primary" to={`/${kind}/new`}>
+              <Plus size={18} />
+              เพิ่มรายการ
+            </Link>
+          </div>
         }
       />
       <div className="toolbar">
