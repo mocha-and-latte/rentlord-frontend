@@ -17,6 +17,8 @@ type InviteDetails = {
   expiresAt: string
 }
 
+type LiffClient = typeof import('@line/liff')['default']
+
 export function NewTenantInvitePage() {
   const [form, setForm] = useState({
     fullName: '',
@@ -188,28 +190,63 @@ export function NewTenantInvitePage() {
 }
 
 export function PublicTenantInvitePage() {
-  const { token = '' } = useParams()
+  const { token: routeToken = '' } = useParams()
+  const [token, setToken] = useState('')
   const [details, setDetails] = useState<InviteDetails>()
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
+  const [inLine, setInLine] = useState(false)
+  const [liffClient, setLiffClient] = useState<LiffClient>()
   const [error, setError] = useState<unknown>()
 
   useEffect(() => {
-    api<InviteDetails>(`/public/tenant-invites/${token}`)
-      .then(setDetails)
-      .catch(setError)
-      .finally(() => setLoading(false))
-  }, [token])
+    async function initializeInvite() {
+      try {
+        const liffId = import.meta.env.VITE_LINE_LIFF_ID
+        if (!liffId) throw new Error('ยังไม่ได้ตั้งค่า LINE LIFF')
+        const { default: initializedLiff } = await import('@line/liff')
+        await initializedLiff.init({
+          liffId,
+          withLoginOnExternalBrowser: true,
+        })
+        setLiffClient(initializedLiff)
+        setInLine(initializedLiff.isInClient())
+        const inviteToken = routeToken || inviteTokenFromUrl()
+        if (!inviteToken) throw new Error('ไม่พบรหัสคำเชิญ')
+        setToken(inviteToken)
+        setDetails(
+          await api<InviteDetails>(
+            `/public/tenant-invites/${encodeURIComponent(inviteToken)}`,
+          ),
+        )
+      } catch (initializeError) {
+        setError(initializeError)
+      } finally {
+        setLoading(false)
+      }
+    }
+    void initializeInvite()
+  }, [routeToken])
 
   async function loginWithLine() {
     setStarting(true)
     setError(undefined)
     try {
-      const result = await api<{ authorizationUrl: string }>(
-        `/public/tenant-invites/${token}/line-login`,
-        { method: 'POST' },
+      if (!liffClient) throw new Error('LINE LIFF ยังไม่พร้อมใช้งาน')
+      if (!liffClient.isLoggedIn()) {
+        liffClient.login({ redirectUri: window.location.href })
+        return
+      }
+      const idToken = liffClient.getIDToken()
+      if (!idToken) throw new Error('LINE ไม่ได้ส่งข้อมูลยืนยันตัวตน')
+      const actionLink = await api<string>(
+        `/public/tenant-invites/${encodeURIComponent(token)}/accept`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ idToken }),
+        },
       )
-      window.location.assign(result.authorizationUrl)
+      window.location.assign(actionLink)
     } catch (loginError) {
       setError(loginError)
       setStarting(false)
@@ -246,6 +283,11 @@ export function PublicTenantInvitePage() {
               ของคุณกับข้อมูลผู้เช่าโดยอัตโนมัติ ลิงก์นี้ใช้ได้ครั้งเดียวถึง{' '}
               {new Date(details.expiresAt).toLocaleString('th-TH')}
             </div>
+            <p className="liff-context">
+              {inLine
+                ? 'กำลังเปิดผ่าน LINE — ไม่ต้องกรอกรหัสผ่านเพิ่มเติม'
+                : 'ระบบจะเชื่อมต่อผ่าน LIFF ด้วยบัญชี LINE ของคุณ'}
+            </p>
             <button
               className="line-button invite-line-button"
               onClick={loginWithLine}
@@ -255,7 +297,7 @@ export function PublicTenantInvitePage() {
               <b>
                 {starting
                   ? 'กำลังเชื่อมต่อ…'
-                  : 'เข้าสู่ระบบและตอบรับคำเชิญ'}
+                  : 'ตอบรับคำเชิญด้วย LINE'}
               </b>
             </button>
           </>
@@ -266,6 +308,20 @@ export function PublicTenantInvitePage() {
 }
 
 export function TenantInviteCompletePage() {
+  const [closeLiff, setCloseLiff] = useState<() => void>()
+
+  useEffect(() => {
+    const liffId = import.meta.env.VITE_LINE_LIFF_ID
+    if (!liffId) return
+    void import('@line/liff')
+      .then(async ({ default: initializedLiff }) => {
+        await initializedLiff.init({ liffId })
+        if (initializedLiff.isInClient())
+          setCloseLiff(() => () => initializedLiff.closeWindow())
+      })
+      .catch(() => undefined)
+  }, [])
+
   return (
     <div className="invite-public-page">
       <main className="invite-public-card complete">
@@ -278,7 +334,25 @@ export function TenantInviteCompletePage() {
           บัญชี Rentlord และ LINE ของคุณถูกผูกกับข้อมูลผู้เช่าแล้ว
           คุณสามารถปิดหน้านี้ได้
         </p>
+        {closeLiff && (
+          <button className="primary wide" onClick={closeLiff}>
+            ปิดหน้าต่าง
+          </button>
+        )}
       </main>
     </div>
   )
+}
+
+function inviteTokenFromUrl() {
+  const params = new URLSearchParams(window.location.search)
+  const directToken = params.get('invite')
+  if (directToken) return directToken
+  const liffState = params.get('liff.state')
+  if (!liffState) return ''
+  try {
+    return new URL(liffState, window.location.origin).searchParams.get('invite') ?? ''
+  } catch {
+    return ''
+  }
 }

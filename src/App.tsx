@@ -35,6 +35,7 @@ export default function App() {
         element={<PublicAgreementPage />}
       />
       <Route path="/tenant-invite/:token" element={<PublicTenantInvitePage />} />
+      <Route path="/tenant-invite" element={<PublicTenantInvitePage />} />
       <Route path="/tenant-invite/complete" element={<TenantInviteCompletePage />} />
       <Route element={<Guard />}>
         <Route path="/dashboard" element={<DashboardPage />} />

@@ -10,6 +10,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@line/liff": "^2.31.0",
     "@supabase/supabase-js": "^2.57.2",
     "@tanstack/query-db-collection": "^1.2.12",
     "@tanstack/react-db": "^0.3.7",

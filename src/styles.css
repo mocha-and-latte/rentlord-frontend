@@ -985,6 +985,15 @@ textarea {
   margin-top: 22px;
   padding: 13px;
 }
+.liff-context {
+  margin: 18px 0 0;
+  color: #087a3d;
+  font-size: 13px;
+  text-align: center;
+}
+.invite-public-card.complete .wide {
+  margin-top: 22px;
+}
 .invite-public-card.complete {
   text-align: center;
 }

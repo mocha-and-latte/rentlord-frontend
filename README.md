@@ -11,7 +11,7 @@ npm run dev
 
 LINE Login starts at the backend `/api/v1/auth/line` route. The backend exchanges the LINE authorization code and hands the browser a Supabase session; no LINE secret is exposed to Vite.
 
-Tenant invitations start at `/tenants/invite`. Each invite URL is valid once for three days and completes at `/tenant-invite/complete`, which must be included in the Supabase Auth redirect allowlist.
+Tenant invitations start at `/tenants/invite`. Each invite URL opens the LIFF app, is valid once for three days, and completes at `/tenant-invite/complete`. Configure the LIFF Endpoint URL as `${APP_URL}/tenant-invite`, enable the `openid` and `profile` scopes, set `VITE_LINE_LIFF_ID`, and include `/tenant-invite/complete` in the Supabase Auth redirect allowlist.
 
 ## Vercel
 
