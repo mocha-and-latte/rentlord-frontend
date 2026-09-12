@@ -17,6 +17,7 @@ import { RichTextEditor } from '../components/RichTextEditor'
 
 type Kind = 'units' | 'tenants' | 'custom-fields' | 'agreement-templates'
 type UnitImage = { path: string; url: string }
+type LineLink = { linkableType: string; linkableId: string }
 
 const config = {
   units: {
@@ -79,11 +80,27 @@ const config = {
 export function ResourceList({ kind }: { kind: Kind }) {
   const c = config[kind]
   const [data, setData] = useState<any>()
+  const [linkedTenantIds, setLinkedTenantIds] = useState<Set<string>>(new Set())
   const [error, setError] = useState<unknown>()
   const [q, setQ] = useState('')
   useEffect(() => {
     setData(undefined)
-    api(`/${kind}?pageSize=100`).then(setData).catch(setError)
+    setError(undefined)
+    const recordsRequest = api(`/${kind}?pageSize=100`)
+    const lineLinksRequest =
+      kind === 'tenants' ? api<LineLink[]>('/line-links') : Promise.resolve([])
+    Promise.all([recordsRequest, lineLinksRequest])
+      .then(([records, lineLinks]) => {
+        setData(records)
+        setLinkedTenantIds(
+          new Set(
+            lineLinks
+              .filter((link) => link.linkableType === 'tenant')
+              .map((link) => link.linkableId),
+          ),
+        )
+      })
+      .catch(setError)
   }, [kind])
   const items = (data?.items || []).filter((x: any) =>
     JSON.stringify(x).toLowerCase().includes(q.toLowerCase()),
@@ -131,7 +148,18 @@ export function ResourceList({ kind }: { kind: Kind }) {
             <Link className="list-row" to={`/${kind}/${item.id}`} key={item.id}>
               <div className="avatar">{String(c.name(item)).slice(0, 1)}</div>
               <div className="grow">
-                <strong>{c.name(item)}</strong>
+                <strong className="list-row-title">
+                  {c.name(item)}
+                  {kind === 'tenants' && linkedTenantIds.has(item.id) && (
+                    <span
+                      className="line-linked-icon"
+                      aria-label="ผูกบัญชี LINE แล้ว"
+                      title="ผูกบัญชี LINE แล้ว"
+                    >
+                      <MessageCircle size={13} fill="currentColor" />
+                    </span>
+                  )}
+                </strong>
                 <span>{c.detail(item)}</span>
               </div>
               {item.status && <Status value={item.status} />}
