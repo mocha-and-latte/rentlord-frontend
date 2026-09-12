@@ -150,6 +150,9 @@ export function ResourceList({ kind }: { kind: Kind }) {
               <div className="grow">
                 <strong className="list-row-title">
                   {c.name(item)}
+                  {kind === 'agreement-templates' && item.standardKey && (
+                    <span className="standard-template-badge">มาตรฐาน</span>
+                  )}
                   {kind === 'tenants' && linkedTenantIds.has(item.id) && (
                     <span
                       className="line-linked-icon"
@@ -333,13 +336,15 @@ export function ResourceForm({ kind }: { kind: Kind }) {
   }
 
   if (loading) return <Loading />
+  const isStandardTemplate =
+    kind === 'agreement-templates' && Boolean(form.standardKey)
   return (
     <>
       <PageHeader
         title={isNew ? `เพิ่ม${c.title}` : `แก้ไข${c.title}`}
         subtitle="กรอกข้อมูลให้ครบ แล้วกดบันทึก"
         action={
-          !isNew && (
+          !isNew && !isStandardTemplate && (
             <button className="ghost danger" onClick={remove}>
               <Trash2 size={17} />
               ลบ
@@ -350,6 +355,12 @@ export function ResourceForm({ kind }: { kind: Kind }) {
       {((!isSubmitting && submitError) || error) && (
         <ErrorBox error={(!isSubmitting && submitError) || error} />
       )}
+      {isStandardTemplate && (
+        <div className="hint">
+          แม่แบบมาตรฐานเป็นแบบอ่านอย่างเดียว ระบบจะเลือกให้อัตโนมัติเมื่อสร้างสัญญาใหม่
+          คุณสามารถสร้างแม่แบบใหม่สำหรับเงื่อนไขเฉพาะของธุรกิจได้
+        </div>
+      )}
       <form className="form-card" action={submitAction}>
         {c.fields.map(([key, label, type]) =>
           key === 'contentHtml' ? (
@@ -357,19 +368,27 @@ export function ResourceForm({ kind }: { kind: Kind }) {
               <span className="form-field-label" id={`${key}-label`}>
                 {label}
               </span>
-              <RichTextEditor
-                value={form[key] ?? ''}
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, [key]: value }))
-                }
-                labelledBy={`${key}-label`}
-              />
+              {isStandardTemplate ? (
+                <article
+                  className="agreement-paper standard-template-preview"
+                  dangerouslySetInnerHTML={{ __html: form[key] ?? '' }}
+                />
+              ) : (
+                <RichTextEditor
+                  value={form[key] ?? ''}
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, [key]: value }))
+                  }
+                  labelledBy={`${key}-label`}
+                />
+              )}
             </div>
           ) : type === 'textarea' ? (
             <label key={key}>
               {label}
               <textarea
                 rows={3}
+                disabled={isStandardTemplate}
                 value={form[key] ?? ''}
                 onChange={(e) => setForm({ ...form, [key]: e.target.value })}
               />
@@ -378,6 +397,7 @@ export function ResourceForm({ kind }: { kind: Kind }) {
             <label className="checkbox-field" key={key}>
               <input
                 type="checkbox"
+                disabled={isStandardTemplate}
                 checked={Boolean(form[key])}
                 onChange={(e) => setForm({ ...form, [key]: e.target.checked })}
               />
@@ -387,19 +407,20 @@ export function ResourceForm({ kind }: { kind: Kind }) {
             <label key={key}>
               {label}
               <input
+                disabled={isStandardTemplate || form.fieldType !== 'select'}
                 value={
                   Array.isArray(form[key])
                     ? form[key].join(', ')
                     : (form[key] ?? '')
                 }
                 onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                disabled={form.fieldType !== 'select'}
               />
             </label>
           ) : type.startsWith('select:') ? (
             <label key={key}>
               {label}
               <select
+                disabled={isStandardTemplate}
                 value={form[key] ?? ''}
                 onChange={(e) => setForm({ ...form, [key]: e.target.value })}
               >
@@ -416,6 +437,7 @@ export function ResourceForm({ kind }: { kind: Kind }) {
               {label}
               <input
                 type={type}
+                disabled={isStandardTemplate}
                 min={type === 'number' ? 0 : undefined}
                 value={form[key] ?? ''}
                 onChange={(e) =>
@@ -493,7 +515,7 @@ export function ResourceForm({ kind }: { kind: Kind }) {
           <Link className="ghost" to={`/${kind}`}>
             ยกเลิก
           </Link>
-          <SubmitButton>บันทึก</SubmitButton>
+          {!isStandardTemplate && <SubmitButton>บันทึก</SubmitButton>}
         </div>
       </form>
     </>

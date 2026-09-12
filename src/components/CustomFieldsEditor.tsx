@@ -20,7 +20,7 @@ export function CustomFieldsEditor({
     onChange({ ...values, [id]: value })
   return (
     <fieldset className="custom-fields">
-      <legend>ข้อมูลกำหนดเอง</legend>
+      <legend>ข้อมูลเพิ่มเติม (เว้นว่างได้ เว้นแต่มี *)</legend>
       {definitions.map((definition) => {
         const value = values[definition.id]
         if (definition.fieldType === 'checkbox')

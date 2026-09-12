@@ -54,6 +54,7 @@ type Reference = {
   title?: string | null
   fullName?: string | null
   name?: string | null
+  standardKey?: string | null
 }
 
 type References = {
@@ -166,7 +167,9 @@ export function NewAgreementPage() {
           ...current,
           unitId: unitItems[0]?.id,
           tenantId: tenantItems[0]?.id,
-          templateId: templateItems[0]?.id,
+          templateId:
+            templateItems.find((item) => item.standardKey)?.id ??
+            templateItems[0]?.id,
         }))
       })
       .catch(setLoadError)
@@ -303,6 +306,9 @@ export function NewAgreementPage() {
             </label>
           )}
           <div className="span-2">
+            <p className="muted">
+              ข้อมูลเพิ่มเติมทั้งหมดเป็นตัวเลือก ช่องที่เว้นว่างจะไม่แสดงในแม่แบบมาตรฐาน
+            </p>
             <CustomFieldsEditor
               definitions={definitions}
               values={customValues}

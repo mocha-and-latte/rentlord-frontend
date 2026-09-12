@@ -24,7 +24,11 @@ import { api } from '../lib/api'
 
 const builtInVariables = [
   ['ชื่อเจ้าของ', 'landlord_name'],
+  ['อีเมลเจ้าของ', 'landlord_email'],
   ['ชื่อผู้เช่า', 'tenant_full_name'],
+  ['โทรศัพท์ผู้เช่า', 'tenant_phone'],
+  ['อีเมลผู้เช่า', 'tenant_email'],
+  ['ที่อยู่ผู้เช่า', 'tenant_address'],
   ['ชื่อยูนิต', 'unit_title'],
   ['ที่อยู่ยูนิต', 'unit_address'],
   ['วันเริ่มสัญญา', 'agreement_start_date'],
@@ -36,7 +40,11 @@ const builtInVariables = [
 
 const sample = {
   landlord_name: 'สมชาย ใจดี',
+  landlord_email: 'somchai@example.com',
   tenant_full_name: 'วิภา รุ่งเรือง',
+  tenant_phone: '089-123-4567',
+  tenant_email: 'wipa@example.com',
+  tenant_address: '99 ถนนสุขุมวิท กรุงเทพมหานคร',
   unit_title: 'บ้านสุขุมวิท 24',
   unit_address: 'กรุงเทพมหานคร',
   agreement_start_date: '1 ตุลาคม 2569',
