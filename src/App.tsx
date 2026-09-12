@@ -15,6 +15,7 @@ import { LineAccountsPage } from './pages/LineAccountsPage'
 import { AdminPage, NotificationsPage } from './pages/MiscPages'
 import { SettingsPage } from './pages/SettingsPage'
 import {
+  LiffEntryPage,
   NewTenantInvitePage,
   PublicTenantInvitePage,
   TenantInviteCompletePage,
@@ -34,9 +35,15 @@ export default function App() {
         path="/public/agreement/:token"
         element={<PublicAgreementPage />}
       />
-      <Route path="/tenant-invite/:token" element={<PublicTenantInvitePage />} />
-      <Route path="/tenant-invite" element={<PublicTenantInvitePage />} />
-      <Route path="/tenant-invite/complete" element={<TenantInviteCompletePage />} />
+      <Route
+        path="/tenant-invite/:token"
+        element={<PublicTenantInvitePage />}
+      />
+      <Route path="/tenant-invite" element={<LiffEntryPage />} />
+      <Route
+        path="/tenant-invite/complete"
+        element={<TenantInviteCompletePage />}
+      />
       <Route element={<Guard />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/units" element={<ResourceList kind="units" />} />

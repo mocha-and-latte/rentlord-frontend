@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react'
 import { CheckCircle2, Copy, MessageCircle, Send } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
+import { PublicAgreementPage } from './AgreementPages'
 import { ErrorBox, Loading, PageHeader } from '../components/UI'
 
 type CreatedInvite = {
@@ -307,6 +308,15 @@ export function PublicTenantInvitePage() {
   )
 }
 
+export function LiffEntryPage() {
+  const agreementToken = liffParameterFromUrl('agreement')
+  return agreementToken ? (
+    <PublicAgreementPage tokenOverride={agreementToken} />
+  ) : (
+    <PublicTenantInvitePage />
+  )
+}
+
 export function TenantInviteCompletePage() {
   const [closeLiff, setCloseLiff] = useState<() => void>()
 
@@ -345,13 +355,19 @@ export function TenantInviteCompletePage() {
 }
 
 function inviteTokenFromUrl() {
+  return liffParameterFromUrl('invite')
+}
+
+function liffParameterFromUrl(name: string) {
   const params = new URLSearchParams(window.location.search)
-  const directToken = params.get('invite')
+  const directToken = params.get(name)
   if (directToken) return directToken
   const liffState = params.get('liff.state')
   if (!liffState) return ''
   try {
-    return new URL(liffState, window.location.origin).searchParams.get('invite') ?? ''
+    return (
+      new URL(liffState, window.location.origin).searchParams.get(name) ?? ''
+    )
   } catch {
     return ''
   }

@@ -42,6 +42,11 @@ type Agreement = {
   acceptanceIp?: string | null
   publicUrl?: string | null
   renderedHtml?: string | null
+  lineDelivery?: {
+    recipientCount: number
+    sentCount: number
+    failedCount: number
+  }
 }
 
 type Reference = {
@@ -331,6 +336,7 @@ export function AgreementPage() {
   const [definitions, setDefinitions] = useState<any[]>([])
   const [customValues, setCustomValues] = useState<Record<string, unknown>>({})
   const [error, setError] = useState<unknown>()
+  const [sendNotice, setSendNotice] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
   const load = () => {
     if (!id) {
@@ -374,6 +380,8 @@ export function AgreementPage() {
   async function send() {
     if (!confirm('เมื่อส่งแล้ว สัญญาจะไม่สามารถแก้ไขได้ ยืนยันหรือไม่?')) return
     try {
+      setError(undefined)
+      setSendNotice('')
       await persistCustomFields()
       const agreement = await api<Agreement>(`/agreements/${id}/send`, {
         method: 'POST',
@@ -381,6 +389,14 @@ export function AgreementPage() {
       if (!agreement || typeof agreement !== 'object')
         throw new Error('ข้อมูลสัญญาที่ได้รับไม่สมบูรณ์')
       setData(agreement)
+      const delivery = agreement.lineDelivery
+      setSendNotice(
+        !delivery?.recipientCount
+          ? 'ส่งสัญญาแล้ว แต่ผู้เช่ายังไม่ได้เชื่อมบัญชี LINE'
+          : delivery.failedCount
+            ? `ส่งสัญญาแล้ว และส่งเข้า LINE สำเร็จ ${delivery.sentCount} จาก ${delivery.recipientCount} บัญชี`
+            : `ส่งสัญญาและลิงก์ LIFF เข้า LINE ของผู้เช่าแล้ว ${delivery.sentCount} บัญชี`,
+      )
     } catch (sendError) {
       setError(sendError)
     }
@@ -481,6 +497,7 @@ export function AgreementPage() {
         }
       />
       {error && <ErrorBox error={error} />}
+      {sendNotice && <div className="success-box">{sendNotice}</div>}
       <div className="detail-grid">
         <section className="detail-card">
           <div className="detail-title">
@@ -560,8 +577,13 @@ export function AgreementPage() {
   )
 }
 
-export function PublicAgreementPage() {
-  const { token } = useParams()
+export function PublicAgreementPage({
+  tokenOverride,
+}: {
+  tokenOverride?: string
+} = {}) {
+  const { token: routeToken } = useParams()
+  const token = tokenOverride || routeToken
   const [data, setData] = useState<Agreement | null>(null)
   const [error, setError] = useState<unknown>()
   const [isDecisionPending, startDecision] = useTransition()
