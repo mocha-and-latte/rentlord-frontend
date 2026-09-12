@@ -10,21 +10,34 @@ export class ApiError extends Error {
     super(message)
   }
 }
+
+export type ApiRequestInit = RequestInit & {
+  idempotencyKey?: string
+}
+
+export const createIdempotencyKey = () => crypto.randomUUID()
+
 export async function api<T = any>(
   path: string,
-  init: RequestInit = {},
+  init: ApiRequestInit = {},
 ): Promise<T> {
+  const { idempotencyKey, ...requestInit } = init
+  const method = String(requestInit.method ?? 'GET').toUpperCase()
+  const mutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
   const {
     data: { session },
   } = await supabase.auth.getSession()
   const response = await fetch(apiUrl(path), {
-    ...init,
+    ...requestInit,
     headers: {
       'Content-Type': 'application/json',
       ...(session?.access_token
         ? { Authorization: `Bearer ${session.access_token}` }
         : {}),
-      ...init.headers,
+      ...(mutation
+        ? { 'Idempotency-Key': idempotencyKey ?? createIdempotencyKey() }
+        : {}),
+      ...requestInit.headers,
     },
   })
   const json = await response.json().catch(() => ({}))
